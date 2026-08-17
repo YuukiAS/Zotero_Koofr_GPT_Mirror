@@ -1,0 +1,216 @@
+{
+  "items": [
+    {
+      "item_key": "SINGLE01",
+      "item_type": "journalArticle",
+      "title": "Heavy-Tailed Sampling",
+      "authors": ["Mei Wang"],
+      "year": "2026",
+      "doi": "10.1000/single",
+      "abstract": "A small fixture abstract for a single-author paper.",
+      "collections": ["Sampling"],
+      "tags": ["heavy tails"],
+      "attachments": [
+        {
+          "attachment_key": "ATT-SINGLE",
+          "source_path": "pdfs/single.pdf",
+          "filename": "single.pdf",
+          "mime_type": "application/pdf"
+        }
+      ]
+    },
+    {
+      "item_key": "MULTI02",
+      "item_type": "journalArticle",
+      "title": "Federated Bayesian Learning",
+      "authors": ["Alice Smith", "Bob Wang", "Carla Jones"],
+      "year": "2026",
+      "doi": "10.1000/multi",
+      "abstract": "A fixture abstract for a multi-author paper.",
+      "collections": ["Federated Learning", "Medical Imaging"],
+      "tags": ["Bayesian", "federated learning", "likelihood"],
+      "attachments": [
+        {
+          "attachment_key": "ATT-MULTI",
+          "source_path": "pdfs/multi.pdf",
+          "filename": "multi.pdf",
+          "mime_type": "application/pdf"
+        }
+      ]
+    },
+    {
+      "item_key": "NODOI03",
+      "item_type": "preprint",
+      "title": "A Title, With Comma",
+      "authors": ["No Doi"],
+      "year": "2025",
+      "doi": "",
+      "abstract": "This row checks CSV quoting.",
+      "collections": ["Metadata"],
+      "tags": ["csv"],
+      "attachments": [
+        {
+          "attachment_key": "ATT-NODOI",
+          "source_path": "pdfs/nodoi.pdf",
+          "filename": "nodoi.pdf",
+          "mime_type": "application/pdf"
+        }
+      ]
+    },
+    {
+      "item_key": "NOABS04",
+      "item_type": "journalArticle",
+      "title": "No Abstract Fixture",
+      "authors": ["Abstract Missing"],
+      "year": "2024",
+      "collections": ["Metadata"],
+      "tags": ["missing abstract"],
+      "attachments": [
+        {
+          "attachment_key": "ATT-NOABS",
+          "source_path": "pdfs/noabstract.pdf",
+          "filename": "noabstract.pdf",
+          "mime_type": "application/pdf"
+        }
+      ]
+    },
+    {
+      "item_key": "NOYEAR05",
+      "item_type": "journalArticle",
+      "title": "Unknown Year Fixture",
+      "authors": ["Year Missing"],
+      "doi": "10.1000/noyear",
+      "abstract": "This item belongs in Unknown-Year.",
+      "collections": ["Metadata"],
+      "tags": ["unknown year"],
+      "attachments": [
+        {
+          "attachment_key": "ATT-NOYEAR",
+          "source_path": "pdfs/noyear.pdf",
+          "filename": "noyear.pdf",
+          "mime_type": "application/pdf"
+        }
+      ]
+    },
+    {
+      "item_key": "BADCHAR6",
+      "item_type": "journalArticle",
+      "title": "Windows: Paths / Questions? Stars* Quotes\" Angles<Inside> Pipes|",
+      "authors": ["Invalid Character"],
+      "year": "2023",
+      "doi": "10.1000/badchars",
+      "abstract": "The title includes Windows-invalid filename characters.",
+      "collections": ["Windows"],
+      "tags": ["filename"],
+      "attachments": [
+        {
+          "attachment_key": "ATT-BADCHAR",
+          "source_path": "pdfs/badchars.pdf",
+          "filename": "badchars.pdf",
+          "mime_type": "application/pdf"
+        }
+      ]
+    },
+    {
+      "item_key": "LONGTTL7",
+      "item_type": "journalArticle",
+      "title": "This is an intentionally extremely long research title designed to verify that the exporter truncates filenames deterministically while preserving the stable Zotero item key suffix and producing a path that works on Windows filesystems without relying on operating system errors",
+      "authors": ["Length Tester"],
+      "year": "2022",
+      "doi": "10.1000/long",
+      "abstract": "The filename should be truncated but keep the item key.",
+      "collections": ["Windows"],
+      "tags": ["long title"],
+      "attachments": [
+        {
+          "attachment_key": "ATT-LONG",
+          "source_path": "pdfs/long.pdf",
+          "filename": "long.pdf",
+          "mime_type": "application/pdf"
+        }
+      ]
+    },
+    {
+      "item_key": "UNICODE8",
+      "item_type": "journalArticle",
+      "title": "中文标题与 Unicode Normalization",
+      "authors": ["陈 小明"],
+      "year": "2021",
+      "doi": "10.1000/unicode",
+      "abstract": "Unicode text must survive the mirror export.",
+      "collections": ["中文 Collection"],
+      "tags": ["中文标签", "Unicode"],
+      "attachments": [
+        {
+          "attachment_key": "ATT-UNICODE",
+          "source_path": "pdfs/unicode.pdf",
+          "filename": "unicode.pdf",
+          "mime_type": "application/pdf"
+        }
+      ]
+    },
+    {
+      "item_key": "DUPLCT9A",
+      "item_type": "journalArticle",
+      "title": "Same Visible Title",
+      "authors": ["Duplicate Author"],
+      "year": "2020",
+      "doi": "10.1000/dupa",
+      "abstract": "First near-duplicate fixture.",
+      "collections": ["Duplicates"],
+      "tags": ["duplicate"],
+      "attachments": [
+        {
+          "attachment_key": "ATT-DUPA",
+          "source_path": "pdfs/dupa.pdf",
+          "filename": "dupa.pdf",
+          "mime_type": "application/pdf"
+        }
+      ]
+    },
+    {
+      "item_key": "DUPLCT9B",
+      "item_type": "journalArticle",
+      "title": "Same Visible Title",
+      "authors": ["Duplicate Author"],
+      "year": "2020",
+      "doi": "10.1000/dupb",
+      "abstract": "Second near-duplicate fixture.",
+      "collections": ["Duplicates"],
+      "tags": ["duplicate"],
+      "attachments": [
+        {
+          "attachment_key": "ATT-DUPB",
+          "source_path": "pdfs/dupb.pdf",
+          "filename": "dupb.pdf",
+          "mime_type": "application/pdf"
+        }
+      ]
+    },
+    {
+      "item_key": "NONPDF10",
+      "item_type": "journalArticle",
+      "title": "Multiple Attachments Single PDF",
+      "authors": ["Attachment Tester"],
+      "year": "2019",
+      "doi": "10.1000/attachments",
+      "abstract": "Only one attachment is a PDF.",
+      "collections": ["Attachments"],
+      "tags": ["pdf", "supplement"],
+      "attachments": [
+        {
+          "attachment_key": "ATT-NOTE",
+          "source_path": "pdfs/supplement.txt",
+          "filename": "supplement.txt",
+          "mime_type": "text/plain"
+        },
+        {
+          "attachment_key": "ATT-ONLYPDF",
+          "source_path": "pdfs/onlypdf.pdf",
+          "filename": "onlypdf.pdf",
+          "mime_type": "application/pdf"
+        }
+      ]
+    }
+  ]
+}

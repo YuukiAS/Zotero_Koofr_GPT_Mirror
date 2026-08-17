@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+config.toml
+ZoteroGPTMirror/
+Zotero GPT/
+mirror/
+logs/
+*.log
+
+.DS_Store
+Thumbs.db
