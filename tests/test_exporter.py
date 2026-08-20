@@ -102,11 +102,15 @@ def test_fixture_initial_export_writes_expected_tree(tmp_path: Path) -> None:
     output = tmp_path / "mirror"
     report = Exporter(output, Path.cwd()).export(FixtureSource())
     assert report.errors == []
-    assert report.added == 11
+    assert report.added == 12
+    assert report.multiple_pdf_attachments == 1
+    assert report.duplicate_pdfs_suppressed == 1
     assert (output / "_Index" / "library.csv").exists()
     assert (output / "_Index" / "manifest.json").exists()
-    assert len(list((output / "Papers").rglob("*.pdf"))) == 11
-    assert len(list((output / "Papers").rglob("*.md"))) == 11
+    assert len(list((output / "Papers").rglob("*.pdf"))) == 15
+    assert len(list((output / "Papers").rglob("*.md"))) == 12
+    assert len(list((output / "Papers").rglob("*MULTIPDF11*.pdf"))) == 4
+    assert len(list((output / "Papers").rglob("*MULTIPDF11*.md"))) == 1
     assert (output / "Papers" / "Unknown-Year").exists()
 
 
@@ -118,7 +122,7 @@ def test_second_export_skips_all_items(tmp_path: Path) -> None:
     assert report.added == 0
     assert report.updated_pdf == 0
     assert report.updated_metadata == 0
-    assert report.skipped == 11
+    assert report.skipped == 12
 
 
 def test_metadata_change_only_updates_metadata(tmp_path: Path) -> None:

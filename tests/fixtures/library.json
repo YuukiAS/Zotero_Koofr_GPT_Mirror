@@ -211,6 +211,54 @@
           "mime_type": "application/pdf"
         }
       ]
+    },
+    {
+      "item_key": "MULTIPDF11",
+      "item_type": "journalArticle",
+      "title": "Main Article with Unlimited Supplemental PDFs",
+      "authors": ["Multi Attachment"],
+      "year": "2018",
+      "doi": "10.1000/multipdf",
+      "abstract": "A fixture item with one bibliographic record and several PDF attachments.",
+      "collections": ["Attachments", "Supplements"],
+      "tags": ["multi-pdf", "supplement", "appendix"],
+      "attachments": [
+        {
+          "attachment_key": "ATT-MULTIPDF-MAIN",
+          "title": "Full Text PDF",
+          "source_path": "pdfs/multipdf-main.pdf",
+          "filename": "paper.pdf",
+          "mime_type": "application/pdf"
+        },
+        {
+          "attachment_key": "ATT-MULTIPDF-SUPPA",
+          "title": "Supplement A",
+          "source_path": "pdfs/multipdf-supplement-a.pdf",
+          "filename": "Supplement A.pdf",
+          "mime_type": "application/pdf"
+        },
+        {
+          "attachment_key": "ATT-MULTIPDF-SUPPB",
+          "title": "Supplement B",
+          "source_path": "pdfs/multipdf-supplement-b.pdf",
+          "filename": "Supplement B.pdf",
+          "mime_type": "application/pdf"
+        },
+        {
+          "attachment_key": "ATT-MULTIPDF-APPENDIX",
+          "title": "Appendix",
+          "source_path": "pdfs/multipdf-appendix.pdf",
+          "filename": "Appendix.pdf",
+          "mime_type": "application/pdf"
+        },
+        {
+          "attachment_key": "ATT-MULTIPDF-DUP",
+          "title": "Supplement A Copy",
+          "source_path": "pdfs/multipdf-supplement-a-copy.pdf",
+          "filename": "Supplement A copy.pdf",
+          "mime_type": "application/pdf"
+        }
+      ]
     }
   ]
 }

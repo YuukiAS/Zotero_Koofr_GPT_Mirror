@@ -10,7 +10,7 @@ def test_cli_dry_run_fixture_does_not_create_output(tmp_path: Path, capsys) -> N
     code = main(["export", "--source", "fixture", "--output-dir", str(output), "--dry-run"])
     captured = capsys.readouterr()
     assert code == 0
-    assert "Would add: 11" in captured.out
+    assert "Would add: 12" in captured.out
     assert not output.exists()
 
 
@@ -18,9 +18,11 @@ def test_cli_validate_prints_scan_summary(tmp_path: Path, capsys) -> None:
     code = main(["validate", "--source", "fixture", "--output-dir", str(tmp_path / "mirror")])
     captured = capsys.readouterr()
     assert code == 0
-    assert "Bibliographic items: 11" in captured.out
+    assert "Bibliographic items: 12" in captured.out
     assert "Items with one PDF: 11" in captured.out
-    assert "PDF attachments exportable: 11" in captured.out
+    assert "Items with multiple PDFs: 1" in captured.out
+    assert "PDF attachments exportable: 15" in captured.out
+    assert "Exact duplicate PDFs suppressed: 1" in captured.out
 
 
 def test_cli_rejects_source_tree_output(tmp_path: Path, capsys) -> None:
