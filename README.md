@@ -1,133 +1,206 @@
 # Zotero Koofr GPT Mirror
 
-把 Zotero 风格的论文 metadata 和本地 PDF 整理成一份 **人能看懂、ChatGPT 以后也容易检索** 的本地镜像。
+把 Windows Zotero 中的论文 metadata 和本地 PDF，整理成 WSL 里的 **人能看懂、ChatGPT 以后也容易检索** 的只读镜像。
 
-这个项目不是另一个 Zotero，也不会替换 Koofr。它只做一件事：从 Zotero 这类事实来源读出论文信息和本地 PDF，生成一份只读镜像，后续再交给 Google Drive / ChatGPT 使用。
+当前架构固定为：
 
-当前版本：`0.1.0`
+```text
+Windows:
+Zotero Desktop + Koofr WebDAV
 
-`0.1.0` 已经可以在 **没有安装 Zotero、没有连接 Google Drive** 的电脑上开发、测试和验证。它使用仓库内的 fixture/demo 数据模拟 Zotero item 和 PDF attachment。
+WSL:
+Python exporter + ~/ZoteroGPTMirror + rclone
+```
 
-尚未完成真实 Zotero library 的端到端验证，也没有接入 Koofr、Google Drive、rclone 或 Windows Task Scheduler。
+本项目不会直接访问 Koofr，不读取 Koofr 密码，不修改 Zotero WebDAV 设置，也不直接读取 `zotero.sqlite`。Zotero 负责把 PDF 下载到 Windows；WSL exporter 通过 Zotero Local API 找到附件，再通过 Windows/WSL 文件互操作只读复制 PDF。
+
+当前版本：`0.2.0`
+
+已通过 Windows interop transport 真实读取 Windows Zotero Local API，并导出到 WSL `~/ZoteroGPTMirror`。当前机器上 direct WSL localhost 不通，因此实际使用的是 Windows interop bridge。
 
 ---
 
 ## 当前能做什么
 
-现在可以把 fixture 中的 Zotero 风格输入：
+- `fixture` source：没有 Zotero 时仍可完整测试镜像生成。
+- `zotero-local` source：读取 Zotero Local API v3，解析 bibliographic items、collections、tags、creators、child attachments 和 attachment file URL。
+- transport：优先 direct WSL localhost；失败时可用 Windows interop `cmd.exe /c curl.exe` 作为桥。
+- path bridge：把 Zotero 返回的 `file:///C:/...` URL 解码成 Windows path，再用 `wslpath` 转为 WSL path。
+- mirror：导出 PDF、同名 `.md` sidecar、`_Index/library.csv`、`_Index/manifest.json`。
+- 增量：新增、PDF 变化、metadata 变化、skip、stale、缺失输出恢复。
+- scan/validate：真实导出前先统计 library 状态，不需要马上复制全部 PDF。
+- multi-PDF：一个 bibliographic item 可以包含任意数量 PDF attachment；metadata/index 中仍只算一篇文献。
 
-- item key
-- title
-- authors
-- year
-- DOI
-- abstract
-- collections
-- tags
-- PDF attachment
+---
 
-导出成类似：
+## WSL 快速测试 fixture
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+python -m pip install -e ".[dev]"
+python -m pytest
+python -m zotero_gpt_mirror validate --source fixture --output-dir ~/ZoteroGPTMirror
+python -m zotero_gpt_mirror export --source fixture --output-dir ~/ZoteroGPTMirror
+```
+
+第二次运行应主要显示 `skip`：
+
+```bash
+python -m zotero_gpt_mirror export --source fixture --output-dir ~/ZoteroGPTMirror
+```
+
+dry-run 不写文件：
+
+```bash
+python -m zotero_gpt_mirror export --source fixture --output-dir ~/ZoteroGPTMirror --dry-run
+```
+
+---
+
+## 真实 Zotero scan
+
+先确认 WSL 环境：
+
+```bash
+which wslpath
+curl -sS http://127.0.0.1:23119/api/
+curl.exe --version
+powershell.exe -NoProfile -Command '$PSVersionTable.PSVersion'
+```
+
+如果 direct localhost 可用：
+
+```bash
+python -m zotero_gpt_mirror validate \
+  --source zotero-local \
+  --zotero-transport direct \
+  --output-dir ~/ZoteroGPTMirror
+```
+
+如果 direct localhost 不通，但 Windows `cmd.exe /c curl.exe` 可用：
+
+```bash
+python -m zotero_gpt_mirror validate \
+  --source zotero-local \
+  --zotero-transport windows-interop \
+  --output-dir ~/ZoteroGPTMirror
+```
+
+默认 `auto` 会先试 direct，再按 EchoSelect 同类方式尝试 Windows interop：
+
+```bash
+python -m zotero_gpt_mirror validate --source zotero-local --output-dir ~/ZoteroGPTMirror
+```
+
+validate 会输出：
 
 ```text
-ZoteroGPTMirror/
+Bibliographic items: ...
+Items with one PDF: ...
+Items with multiple PDFs: ...
+PDF attachments exportable: ...
+No PDF attachment: ...
+Missing local PDF attachments: ...
+Ambiguous primary items: ...
+Exact duplicate PDFs suppressed: ...
+Collections: ...
+Tags: ...
+```
+
+如果 WSL shell 的 `WSL_INTEROP` 为空，程序会尝试从 `/run/WSL/*_interop` 自动选择可用 socket，再按 EchoSelect 同类方式调用 `cmd.exe /d /c curl.exe`。
+
+如果 Zotero 返回 `403`，请在 Zotero 设置中启用：
+
+```text
+Allow other applications on this computer to communicate with Zotero
+```
+
+---
+
+## 真实导出
+
+scan 数量合理后再导出：
+
+```bash
+python -m zotero_gpt_mirror export \
+  --source zotero-local \
+  --output-dir ~/ZoteroGPTMirror
+```
+
+输出结构：
+
+```text
+~/ZoteroGPTMirror/
 ├─ Papers/
 │  ├─ 2026/
-│  │  ├─ Smith et al - Federated Bayesian Learning [MULTI02].pdf
-│  │  └─ Smith et al - Federated Bayesian Learning [MULTI02].md
 │  └─ Unknown-Year/
 └─ _Index/
    ├─ library.csv
    └─ manifest.json
 ```
 
-同一篇论文只保存一份 PDF，不按 collection 复制多份。Collection 和 tag 会写进旁边的 `.md` metadata sidecar 和 `_Index/library.csv`。
+Windows 里查看 WSL mirror 时，可以用：
 
----
-
-## Windows 快速测试
-
-在 PowerShell 中运行：
-
-```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e ".[dev]"
-python -m pytest
-python -m zotero_gpt_mirror export --source fixture --output-dir C:\ZoteroGPTMirror
-```
-
-第二次运行应该主要显示 skip：
-
-```powershell
-python -m zotero_gpt_mirror export --source fixture --output-dir C:\ZoteroGPTMirror
-```
-
-dry-run 不会写任何文件：
-
-```powershell
-python -m zotero_gpt_mirror export --source fixture --output-dir C:\ZoteroGPTMirror --dry-run
-```
-
-也可以使用 console script：
-
-```powershell
-zotero-gpt-mirror export --source fixture --output-dir C:\ZoteroGPTMirror
+```text
+\\wsl.localhost\<distro>\home\<user>\ZoteroGPTMirror
 ```
 
 ---
 
-## 输出内容
+## Metadata sidecar
 
-每篇 PDF 会生成一个同名 `.md`：
+每篇 bibliographic item 会生成一个 item-level `.md`，所有 PDF attachment 都列在同一份 metadata 里：
 
 ```markdown
 # Federated Bayesian Learning
 
-Authors: Alice Smith; Bob Wang; Carla Jones
+Authors: Alice Smith; Bob Wang
 Year: 2026
-DOI: 10.1000/multi
-Zotero Item Key: MULTI02
+DOI: 10.xxxx/xxxx
+URL: https://example.test/paper
+Zotero Item Key: AB12CD34
 
 ## Collections
 
-- Federated Learning
-- Medical Imaging
+- Research / Federated Learning
 
 ## Tags
 
 - Bayesian
 - federated learning
-- likelihood
 
 ## Abstract
 
-A fixture abstract for a multi-author paper.
+...
+
+## PDF Attachments
+
+- Primary
+  - Title: Full Text PDF
+  - File: `Smith et al - Paper [AB12CD34].pdf`
+  - Zotero Attachment Key: AAAA1111
+
+- Supplement
+  - Title: Supplement A
+  - File: `Smith et al - Paper [AB12CD34] -- Supplement A [BBBB2222].pdf`
+  - Zotero Attachment Key: BBBB2222
 ```
 
-`_Index/library.csv` 是给人和简单工具看的全库索引，包含标题、作者、年份、DOI、collections、tags、PDF 相对路径和 metadata 相对路径。
-
-`_Index/manifest.json` 是给程序做增量和安全检查用的状态文件，记录 item key、attachment key、源 PDF 路径、输出相对路径、源文件大小、源文件修改时间和 metadata fingerprint。
+缺失字段会自然省略或标记 `Unknown`，不会输出 `null` / `None`。
 
 ---
 
 ## 增量与安全
 
-导出器不会每次重复制全部 PDF：
-
-- 新增论文：复制 PDF，写 `.md`、index、manifest。
-- PDF 未变化且 metadata 未变化：skip。
-- metadata 变化：只更新 `.md`、index、manifest。
-- PDF 变化：重新复制 PDF。
-- 输出文件被人为删除：自动恢复。
-- 输入中某篇论文消失：manifest 标记 `stale`，但不删除旧输出。
-
-安全边界：
-
-- 不修改、移动、重命名或删除原始 PDF。
-- 不自动删除镜像中的旧文件。
-- 拒绝危险输出目录，例如 `C:\`、`C:\Users`、项目源码目录。
+- 原始 Windows Zotero PDF 永远只读，只复制到 WSL mirror。
+- 不自动删除 mirror 中的旧输出；消失的 item 只在 manifest 中标记 `stale`。
+- PDF 未下载时标记 `missing_local_attachment`，不访问 Koofr。
+- item 没有 PDF 时标记 `no_pdf_attachment`。
+- 多个 PDF attachment 会全部导出已在本地可用且非重复的 PDF；无法高置信度确定 primary 时记录 `ambiguous`，但不阻塞导出。
+- 拒绝危险输出目录，例如 filesystem root、`C:\`、`C:\Users`、项目源码目录。
 - source scan 失败时保留旧 manifest，不写“空库成功”。
-- `config.toml`、本地 mirror、虚拟环境、日志不会提交到 Git。
+- 本地 API 请求不使用 Zotero Web API key，也不访问 `api.zotero.org`。
 
 ---
 
@@ -137,7 +210,7 @@ A fixture abstract for a multi-author paper.
 
 ```toml
 [mirror]
-output_dir = "C:/ZoteroGPTMirror"
+output_dir = "~/ZoteroGPTMirror"
 
 [export]
 source = "fixture"
@@ -147,49 +220,33 @@ write_index = true
 
 [zotero]
 local_api = "http://127.0.0.1:23119/api/"
+transport = "auto"
 ```
 
 真实本地配置文件命名为 `config.toml`，不要提交。当前版本不需要 Google token、Koofr password 或 Zotero API key。
 
 ---
 
-## Zotero Local API 状态
-
-项目已经保留 `zotero-local` 数据源边界，但 `0.1.0` 不声称真实 Zotero 已经集成完成。
-
-如果 Zotero 没有安装或没有运行：
-
-```powershell
-zotero-gpt-mirror export --source zotero-local
-```
-
-会得到类似提示：
-
-```text
-Zotero Local API is not available at http://127.0.0.1:23119/api/
-
-This is expected if Zotero is not installed or not running.
-Use `--source fixture` to test the exporter without Zotero.
-```
-
-下一阶段安装 Zotero 后，要做的是：开启 Zotero Local API，读取真实 bibliographic items，解析 collections/tags/attachments，把 Zotero API 返回值转换成本项目的内部模型，并用 5~10 篇真实样本验收。
-
----
-
-## 不做什么
+## 暂不做
 
 当前版本明确不做：
 
-- Koofr WebDAV client 或 Koofr API；
 - Google Drive API；
-- rclone 配置或上传；
-- ChatGPT Google Drive connector 配置；
-- Zotero MCP；
-- OpenAI MCP Tunnel / Cloudflare Tunnel；
-- Docker、WSL daemon、Windows Service；
+- rclone remote 配置或上传；
 - Windows Task Scheduler；
-- Zotero 自动安装或配置修改；
-- annotations、citation、BibTeX；
-- OCR、PDF text extraction、embedding、vector database。
+- Koofr API 或 WebDAV client；
+- Zotero MCP；
+- Tunnel / cloudflared；
+- Docker；
+- database；
+- vector search；
+- PDF OCR 或全文提取；
+- Zotero 写操作。
+
+下一阶段只应增加 WSL rclone copy：
+
+```text
+rclone copy ~/ZoteroGPTMirror gdrive:"Zotero GPT"
+```
 
 开发顺序见 [`docs/ROADMAP.md`](docs/ROADMAP.md)，当前具体任务见 [`TODO.md`](TODO.md)。

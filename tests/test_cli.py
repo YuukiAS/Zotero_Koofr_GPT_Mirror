@@ -14,6 +14,15 @@ def test_cli_dry_run_fixture_does_not_create_output(tmp_path: Path, capsys) -> N
     assert not output.exists()
 
 
+def test_cli_validate_prints_scan_summary(tmp_path: Path, capsys) -> None:
+    code = main(["validate", "--source", "fixture", "--output-dir", str(tmp_path / "mirror")])
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "Bibliographic items: 11" in captured.out
+    assert "Items with one PDF: 11" in captured.out
+    assert "PDF attachments exportable: 11" in captured.out
+
+
 def test_cli_rejects_source_tree_output(tmp_path: Path, capsys) -> None:
     code = main(["export", "--source", "fixture", "--output-dir", str(Path.cwd())])
     captured = capsys.readouterr()
@@ -22,7 +31,11 @@ def test_cli_rejects_source_tree_output(tmp_path: Path, capsys) -> None:
 
 
 def test_zotero_local_unavailable_error_is_friendly() -> None:
-    source = ZoteroLocalSource("http://127.0.0.1:9/api/", timeout_seconds=0.1)
+    source = ZoteroLocalSource(
+        "http://127.0.0.1:9/api/",
+        timeout_seconds=0.1,
+        transport_mode="direct",
+    )
     try:
         source.scan()
     except SourceUnavailableError as exc:

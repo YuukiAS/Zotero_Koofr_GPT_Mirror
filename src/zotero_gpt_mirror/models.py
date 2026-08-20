@@ -12,9 +12,10 @@ class Author:
 @dataclass(frozen=True)
 class PdfAttachment:
     attachment_key: str
-    source_path: Path
+    source_path: Path | None
     filename: str
     mime_type: str = "application/pdf"
+    title: str | None = None
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,7 @@ class LibraryItem:
     authors: tuple[Author, ...] = field(default_factory=tuple)
     year: str | None = None
     doi: str | None = None
+    url: str | None = None
     abstract: str | None = None
     collections: tuple[str, ...] = field(default_factory=tuple)
     tags: tuple[str, ...] = field(default_factory=tuple)

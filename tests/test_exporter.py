@@ -66,18 +66,22 @@ def test_library_csv_quotes_commas() -> None:
     item = LibraryItem("KEY", "journalArticle", title="A, B", authors=(Author("Alice Smith"),), year="2026")
     csv_text = render_library_csv(
         [
-            {
-                "item_key": item.item_key,
-                "title": item.title or "",
-                "authors": "Alice Smith",
-                "year": "2026",
-                "doi": "",
-                "collections": "",
-                "tags": "",
-                "pdf_relative_path": "Papers/2026/A.pdf",
-                "metadata_relative_path": "Papers/2026/A.md",
-            }
-        ]
+                {
+                    "item_key": item.item_key,
+                    "title": item.title or "",
+                    "authors": "Alice Smith",
+                    "year": "2026",
+                    "doi": "",
+                    "url": "",
+                    "pdf_count": "1",
+                    "primary_pdf": "Papers/2026/A.pdf",
+                    "pdf_paths": "Papers/2026/A.pdf",
+                    "attachment_status": "ATT:primary:available",
+                    "collections": "",
+                    "tags": "",
+                    "metadata_relative_path": "Papers/2026/A.md",
+                }
+            ]
     )
     assert '"A, B"' in csv_text
 
@@ -89,7 +93,9 @@ def test_manifest_round_trip_after_export(tmp_path: Path) -> None:
     manifest = load_manifest(output)
     assert report.added == 1
     assert manifest["schema_version"] == 1
-    assert manifest["items"]["ITEM0001"]["source_file_size"] == pdf.stat().st_size
+    item_entry = manifest["items"]["ITEM0001"]
+    assert item_entry["attachments"][0]["source_file_size"] == pdf.stat().st_size
+    assert item_entry["primary_status"] == "single"
 
 
 def test_fixture_initial_export_writes_expected_tree(tmp_path: Path) -> None:
@@ -181,9 +187,9 @@ def test_stale_items_are_marked_but_not_deleted(tmp_path: Path) -> None:
     assert exported_pdf.exists()
 
 
-def test_multiple_pdf_attachments_report_error(tmp_path: Path) -> None:
-    first = make_pdf(tmp_path / "one.pdf")
-    second = make_pdf(tmp_path / "two.pdf")
+def test_multiple_pdf_attachments_are_exported_without_error(tmp_path: Path) -> None:
+    first = make_pdf(tmp_path / "one.pdf", "%PDF-1.4\none\n%%EOF\n")
+    second = make_pdf(tmp_path / "two.pdf", "%PDF-1.4\ntwo\n%%EOF\n")
     item = LibraryItem(
         item_key="MULTIPDF",
         item_type="journalArticle",
@@ -194,5 +200,50 @@ def test_multiple_pdf_attachments_report_error(tmp_path: Path) -> None:
         ),
     )
     report = Exporter(tmp_path / "out", Path.cwd()).export(StaticSource([item]))
-    assert report.errors == ["MULTIPDF: multiple PDF attachments are not supported in 0.1.0"]
-    assert not (tmp_path / "out" / "Papers").exists()
+    assert report.multiple_pdf_attachments == 1
+    assert report.errors == []
+    assert len(list((tmp_path / "out" / "Papers").rglob("*.pdf"))) == 2
+    assert len(list((tmp_path / "out" / "Papers").rglob("*.md"))) == 1
+
+
+def test_duplicate_pdfs_in_multi_item_are_suppressed_with_provenance(tmp_path: Path) -> None:
+    first = make_pdf(tmp_path / "one.pdf", "%PDF-1.4\nsame\n%%EOF\n")
+    second = make_pdf(tmp_path / "two.pdf", "%PDF-1.4\nsame\n%%EOF\n")
+    item = LibraryItem(
+        item_key="DUPPDF",
+        item_type="journalArticle",
+        title="Duplicate PDFs",
+        attachments=(
+            PdfAttachment("A", first, "paper.pdf", "application/pdf", title="PDF"),
+            PdfAttachment("B", second, "paper-copy.pdf", "application/pdf", title="Accepted Manuscript"),
+        ),
+    )
+    output = tmp_path / "out"
+    report = Exporter(output, Path.cwd()).export(StaticSource([item]))
+    manifest = load_manifest(output)
+    assert report.duplicate_pdfs_suppressed == 1
+    assert len(list((output / "Papers").rglob("*.pdf"))) == 1
+    attachments = manifest["items"]["DUPPDF"]["attachments"]
+    assert attachments[1]["duplicate_of"] == "A"
+    assert attachments[1]["output_pdf_relative_path"] == attachments[0]["output_pdf_relative_path"]
+
+
+def test_ambiguous_primary_exports_all_with_suffixes(tmp_path: Path) -> None:
+    first = make_pdf(tmp_path / "publisher.pdf", "%PDF-1.4\npublisher\n%%EOF\n")
+    second = make_pdf(tmp_path / "accepted.pdf", "%PDF-1.4\naccepted\n%%EOF\n")
+    item = LibraryItem(
+        item_key="AMBIGPDF",
+        item_type="journalArticle",
+        title="Ambiguous Versions",
+        attachments=(
+            PdfAttachment("PUB", first, "publisher.pdf", "application/pdf", title="Publisher Version"),
+            PdfAttachment("ACC", second, "accepted.pdf", "application/pdf", title="Accepted Manuscript"),
+        ),
+    )
+    output = tmp_path / "out"
+    report = Exporter(output, Path.cwd()).export(StaticSource([item]))
+    manifest = load_manifest(output)
+    assert report.ambiguous_primary_items == 1
+    assert manifest["items"]["AMBIGPDF"]["primary_status"] == "ambiguous"
+    names = sorted(path.name for path in (output / "Papers").rglob("*.pdf"))
+    assert all(" -- " in name for name in names)

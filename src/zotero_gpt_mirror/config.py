@@ -9,12 +9,13 @@ from zotero_gpt_mirror.sources.zotero_local import DEFAULT_LOCAL_API
 
 @dataclass(frozen=True)
 class AppConfig:
-    output_dir: str = "C:/ZoteroGPTMirror"
+    output_dir: str = "~/ZoteroGPTMirror"
     source: str = "fixture"
     copy_pdf: bool = True
     write_metadata: bool = True
     write_index: bool = True
     zotero_local_api: str = DEFAULT_LOCAL_API
+    zotero_transport: str = "auto"
 
 
 def load_config(path: Path | None) -> AppConfig:
@@ -32,4 +33,5 @@ def load_config(path: Path | None) -> AppConfig:
         write_metadata=bool(export.get("write_metadata", AppConfig.write_metadata)),
         write_index=bool(export.get("write_index", AppConfig.write_index)),
         zotero_local_api=str(zotero.get("local_api", AppConfig.zotero_local_api)),
+        zotero_transport=str(zotero.get("transport", AppConfig.zotero_transport)),
     )

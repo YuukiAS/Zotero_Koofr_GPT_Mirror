@@ -34,6 +34,7 @@ class FixtureSource:
                     source_path=source_path,
                     filename=attachment["filename"],
                     mime_type=attachment.get("mime_type", "application/octet-stream"),
+                    title=attachment.get("title"),
                 )
             )
         return LibraryItem(
@@ -43,6 +44,7 @@ class FixtureSource:
             authors=tuple(Author(name=name) for name in data.get("authors", [])),
             year=str(data["year"]) if data.get("year") not in (None, "") else None,
             doi=data.get("doi") or None,
+            url=data.get("url") or None,
             abstract=data.get("abstract") or None,
             collections=tuple(data.get("collections", [])),
             tags=tuple(data.get("tags", [])),

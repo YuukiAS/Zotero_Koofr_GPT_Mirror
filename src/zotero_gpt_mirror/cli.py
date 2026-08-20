@@ -7,6 +7,7 @@ from pathlib import Path
 from zotero_gpt_mirror.config import load_config
 from zotero_gpt_mirror.exporter import Exporter
 from zotero_gpt_mirror.naming import normalize_output_path
+from zotero_gpt_mirror.scan import summarize_items
 from zotero_gpt_mirror.sources import FixtureSource, SourceUnavailableError, ZoteroLocalSource
 
 
@@ -28,6 +29,7 @@ def add_common_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--source", choices=["fixture", "zotero-local"], default=None)
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--fixture-dir", type=Path, default=None)
+    parser.add_argument("--zotero-transport", choices=["auto", "direct", "windows-interop"], default=None)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -40,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
     repo_root = Path.cwd()
 
     try:
-        source = make_source(source_name, args, config.zotero_local_api)
+        source = make_source(source_name, args, config.zotero_local_api, config.zotero_transport)
         exporter = Exporter(
             output_dir=output_dir,
             repo_root=repo_root,
@@ -50,8 +52,7 @@ def main(argv: list[str] | None = None) -> int:
             write_index=config.write_index,
         )
         if args.command == "validate":
-            source.scan()
-            print("Validation ok.")
+            print(summarize_items(source.scan()).human_summary())
             return 0
         report = exporter.export(source, dry_run=args.dry_run)
         print(report.human_summary(dry_run=args.dry_run))
@@ -61,9 +62,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
 
-def make_source(source_name: str, args: argparse.Namespace, zotero_api: str):
+def make_source(source_name: str, args: argparse.Namespace, zotero_api: str, zotero_transport: str):
     if source_name == "fixture":
         return FixtureSource(args.fixture_dir)
     if source_name == "zotero-local":
-        return ZoteroLocalSource(zotero_api)
+        return ZoteroLocalSource(
+            api_url=zotero_api,
+            transport_mode=args.zotero_transport or zotero_transport,
+        )
     raise ValueError(f"Unknown source: {source_name}")

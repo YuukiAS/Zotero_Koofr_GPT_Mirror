@@ -1,5 +1,5 @@
 [mirror]
-output_dir = "C:/ZoteroGPTMirror"
+output_dir = "~/ZoteroGPTMirror"
 
 [export]
 source = "fixture"
@@ -9,6 +9,7 @@ write_index = true
 
 [zotero]
 local_api = "http://127.0.0.1:23119/api/"
+transport = "auto"
 
 # Future Google Drive/rclone settings belong here once that phase is implemented.
 # Do not put OAuth tokens, Koofr passwords, or Zotero API keys in this file.

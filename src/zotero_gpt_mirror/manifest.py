@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA_VERSION = 1
-EXPORTER_VERSION = "0.1.0"
+EXPORTER_VERSION = "0.2.0"
 
 
 def load_manifest(output_dir: Path) -> dict[str, Any]:

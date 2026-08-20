@@ -5,7 +5,7 @@ import re
 import unicodedata
 from pathlib import Path, PureWindowsPath
 
-from zotero_gpt_mirror.models import LibraryItem
+from zotero_gpt_mirror.models import LibraryItem, PdfAttachment
 
 INVALID_WINDOWS_CHARS = '<>:"/\\|?*'
 RESERVED_WINDOWS_NAMES = {
@@ -74,6 +74,38 @@ def output_relative_paths(item: LibraryItem) -> tuple[Path, Path]:
     md_name = mirror_filename(item, ".md")
     paper_dir = Path("Papers") / year_dir(item.year)
     return paper_dir / pdf_name, paper_dir / md_name
+
+
+def item_metadata_relative_path(item: LibraryItem) -> Path:
+    return Path("Papers") / year_dir(item.year) / mirror_filename(item, ".md")
+
+
+def item_primary_pdf_relative_path(item: LibraryItem) -> Path:
+    return Path("Papers") / year_dir(item.year) / mirror_filename(item, ".pdf")
+
+
+def attachment_pdf_relative_path(item: LibraryItem, attachment: PdfAttachment) -> Path:
+    base = mirror_stem(item)
+    label = attachment_label(attachment)
+    key = sanitize_filename_segment(attachment.attachment_key, "NOATTKEY")
+    suffix = f" -- {label} [{key}].pdf"
+    available_base = MAX_FILENAME_CHARS - len(suffix)
+    if available_base < 24:
+        available_base = 24
+    if len(base) > available_base:
+        base = base[:available_base].rstrip(" .")
+    return Path("Papers") / year_dir(item.year) / sanitize_filename_segment(f"{base}{suffix}", f"{key}.pdf")
+
+
+def attachment_label(attachment: PdfAttachment) -> str:
+    title = sanitize_filename_segment(attachment.title, "")
+    if title and title.lower() not in {"pdf", "full text", "full text pdf"}:
+        return title
+    filename_stem = Path(attachment.filename).stem
+    stem = sanitize_filename_segment(filename_stem, "")
+    if stem and stem.lower() not in {"pdf", "full text", "full text pdf"}:
+        return stem
+    return sanitize_filename_segment(f"PDF {attachment.attachment_key}", "PDF")
 
 
 def is_windows_drive_root(raw: str) -> bool:
