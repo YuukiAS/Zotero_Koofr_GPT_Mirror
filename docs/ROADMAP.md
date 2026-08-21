@@ -7,7 +7,7 @@ Windows Zotero + Koofr
 -> WSL exporter
 -> ~/ZoteroGPTMirror
 -> WSL rclone
--> Google Drive/Zotero GPT
+-> Google Drive/Zotero
 ```
 
 本项目不直接访问 Koofr，不读取 `zotero.sqlite`，不做 Zotero 写操作。
@@ -87,21 +87,35 @@ Windows Zotero + Koofr
 
 ## Phase 3：WSL rclone -> Google Drive
 
-下一阶段只增加：
+状态：**完成，版本 `0.3.0`。**
+
+已增加：
 
 ```text
-rclone copy ~/ZoteroGPTMirror gdrive:"Zotero GPT"
+rclone copy ~/ZoteroGPTMirror gdrive:Zotero
 ```
 
 目标：
 
 1. 使用 WSL 中已有 rclone；
 2. 确认 `gdrive:` remote；
-3. 上传目标固定为 `gdrive:"Zotero GPT"`；
+3. 上传目标固定为 Google Drive 根目录下已有的 `Zotero` 文件夹，即 `gdrive:Zotero`；
 4. exporter 成功后才运行 rclone；
 5. 第一阶段只用 `rclone copy`；
 6. 不启用远端删除；
-7. rclone token 不进入 repo。
+7. 默认只上传 `Papers/**` 和 `_Index/library.csv`，不上传 `_Index/manifest.json`；
+8. rclone token 不进入 repo；
+9. smoke test 通过 ChatGPT Google Drive connector 验收后，继续全库上传和第二次增量验证。
+
+真实验收结果：
+
+- `gdrive:` remote 已可用；
+- Google Drive 根目录下唯一 `Zotero` 文件夹已确认；
+- smoke test 上传 3 个真实 bibliographic items 和 `_Index/library.csv`；
+- ChatGPT Google Drive connector smoke test 已通过；
+- 全库发布到 `gdrive:Zotero`：984 PDF、968 Markdown、1 CSV；
+- `_Index/manifest.json` 未上传；
+- 第二次相同 `rclone copy` 显示没有需要传输的文件。
 
 ---
 

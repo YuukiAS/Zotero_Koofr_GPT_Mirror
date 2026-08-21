@@ -14,9 +14,11 @@ Python exporter + ~/ZoteroGPTMirror + rclone
 
 本项目不会直接访问 Koofr，不读取 Koofr 密码，不修改 Zotero WebDAV 设置，也不直接读取 `zotero.sqlite`。Zotero 负责把 PDF 下载到 Windows；WSL exporter 通过 Zotero Local API 找到附件，再通过 Windows/WSL 文件互操作只读复制 PDF。
 
-当前版本：`0.2.0`
+当前版本：`0.3.0`
 
 已通过 Windows interop transport 真实读取 Windows Zotero Local API，并导出到 WSL `~/ZoteroGPTMirror`。当前机器上 direct WSL localhost 不通，因此实际使用的是 Windows interop bridge。
+
+已通过 WSL `rclone copy` 把本地 mirror 单向发布到 Google Drive 根目录下的 `Zotero` 文件夹，也就是 rclone 路径 `gdrive:Zotero`。ChatGPT Google Drive connector smoke test、全库上传和第二次增量同步均已完成。
 
 ---
 
@@ -30,6 +32,7 @@ Python exporter + ~/ZoteroGPTMirror + rclone
 - 增量：新增、PDF 变化、metadata 变化、skip、stale、缺失输出恢复。
 - scan/validate：真实导出前先统计 library 状态，不需要马上复制全部 PDF。
 - multi-PDF：一个 bibliographic item 可以包含任意数量 PDF attachment；metadata/index 中仍只算一篇文献。
+- sync：人工运行一个命令即可先 export，再用 `rclone copy` 发布到 `gdrive:Zotero`。
 
 ---
 
@@ -221,9 +224,68 @@ write_index = true
 [zotero]
 local_api = "http://127.0.0.1:23119/api/"
 transport = "auto"
+
+[google_drive]
+rclone_remote = "gdrive"
+folder = "Zotero"
+
+[sync]
+source = "zotero-local"
+upload_manifest = false
 ```
 
-真实本地配置文件命名为 `config.toml`，不要提交。当前版本不需要 Google token、Koofr password 或 Zotero API key。
+真实本地配置文件命名为 `config.toml`，不要提交。`export` 默认仍可保留 `fixture` 方便离线测试；正式 `sync` 默认使用 `zotero-local`。Google OAuth token 只由 rclone 保存到它自己的配置文件中，不写进 `config.toml` 或仓库。当前版本不需要 Koofr password 或 Zotero API key。
+
+---
+
+## Google Drive 发布
+
+本阶段只做单向发布：
+
+```text
+~/ZoteroGPTMirror
+-> rclone copy
+-> gdrive:Zotero
+```
+
+正式上传内容只包括：
+
+- `Papers/**/*.pdf`
+- `Papers/**/*.md`
+- `_Index/library.csv`
+
+默认不上传 `_Index/manifest.json`，因为它是本机 exporter 的增量/provenance 状态，不是给 ChatGPT 阅读的文献索引。
+
+先做 dry-run：
+
+```bash
+python -m zotero_gpt_mirror sync \
+  --source zotero-local \
+  --output-dir ~/ZoteroGPTMirror \
+  --dry-run
+```
+
+确认目标路径、文件数量和排除规则后，再运行真实发布：
+
+```bash
+python -m zotero_gpt_mirror sync \
+  --source zotero-local \
+  --output-dir ~/ZoteroGPTMirror
+```
+
+同步命令内部顺序固定为：
+
+1. 先运行 Zotero export；
+2. export 成功后才调用 `rclone copy`；
+3. rclone 失败不会删除或移动本地 mirror；
+4. 下一次运行同一命令可以自然重试。
+
+`0.3.0` 真实发布结果：
+
+- `gdrive:Zotero` 中包含 984 个 PDF、968 个 item-level Markdown、1 个 `_Index/library.csv`；
+- `_Index/manifest.json` 未上传；
+- 第二次相同 `rclone copy` 显示 `There was nothing to transfer` 和 `0 B / 0 B`；
+- 不使用 `rclone sync`，不做远端删除。
 
 ---
 
@@ -232,7 +294,7 @@ transport = "auto"
 当前版本明确不做：
 
 - Google Drive API；
-- rclone remote 配置或上传；
+- `rclone sync` 或任何远端删除；
 - Windows Task Scheduler；
 - Koofr API 或 WebDAV client；
 - Zotero MCP；
@@ -243,10 +305,4 @@ transport = "auto"
 - PDF OCR 或全文提取；
 - Zotero 写操作。
 
-下一阶段只应增加 WSL rclone copy：
-
-```text
-rclone copy ~/ZoteroGPTMirror gdrive:"Zotero GPT"
-```
-
-开发顺序见 [`docs/ROADMAP.md`](docs/ROADMAP.md)，当前具体任务见 [`TODO.md`](TODO.md)。
+后续阶段主要是 Windows Task Scheduler 启动 WSL sync command。开发顺序见 [`docs/ROADMAP.md`](docs/ROADMAP.md)，当前具体任务见 [`TODO.md`](TODO.md)。

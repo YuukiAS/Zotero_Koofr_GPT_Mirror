@@ -77,16 +77,25 @@
 
 ---
 
-## 下一目标：`0.3.0` WSL rclone -> Google Drive
+## `0.3.0`：WSL rclone -> Google Drive
 
-- [ ] 在 WSL 使用现有 rclone。
-- [ ] 配置或确认 `gdrive:` remote。
-- [ ] 目标目录统一为 `gdrive:"Zotero GPT"`。
-- [ ] rclone token 只由 rclone 保存，不进入 repo。
-- [ ] exporter 成功后才运行 rclone。
-- [ ] 第一阶段使用 `rclone copy`，不启用远端删除。
-- [ ] 网络失败时下一次运行可以自然重试。
-- [ ] 实测第二次同步不会重新上传所有未变化 PDF。
+状态：**完成。已通过 smoke test、全库 `rclone copy` 和第二次增量同步验证。**
+
+- [x] 在 WSL 使用现有 rclone。
+- [x] 确认 `gdrive:` remote 已存在。
+- [x] 目标目录统一为 `gdrive:Zotero`。
+- [x] rclone token 只由 rclone 保存，不进入 repo。
+- [x] exporter 成功后才运行 rclone。
+- [x] 第一阶段使用 `rclone copy`，不启用远端删除。
+- [x] 默认排除 `_Index/manifest.json`，只发布 `Papers/**` 和 `_Index/library.csv`。
+- [x] 网络失败时下一次运行可以自然重试。
+- [x] 重新授权当前失效的 `gdrive:` OAuth token。
+- [x] 只读确认 Google Drive 根目录唯一 `Zotero` 文件夹。
+- [x] dry-run 统计上传计划，确认目标不是 `Zotero/ZoteroGPTMirror`。
+- [x] 上传 3 个真实 item 做 smoke test。
+- [x] 等待 ChatGPT Google Drive connector 验收 smoke test。
+- [x] 全库上传：984 PDF、968 Markdown、1 CSV。
+- [x] 实测第二次同步不会重新上传所有未变化 PDF。
 
 ---
 

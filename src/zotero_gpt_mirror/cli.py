@@ -9,6 +9,7 @@ from zotero_gpt_mirror.exporter import Exporter
 from zotero_gpt_mirror.naming import normalize_output_path
 from zotero_gpt_mirror.scan import summarize_items
 from zotero_gpt_mirror.sources import FixtureSource, SourceUnavailableError, ZoteroLocalSource
+from zotero_gpt_mirror.sync import RcloneConfig, run_sync
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -22,6 +23,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate_parser = subparsers.add_parser("validate", help="Validate configuration and source readiness.")
     add_common_options(validate_parser)
+
+    sync_parser = subparsers.add_parser("sync", help="Export the local mirror, then publish it with rclone copy.")
+    add_common_options(sync_parser)
+    sync_parser.add_argument("--dry-run", action="store_true", help="Run export, then rclone copy --dry-run.")
+    sync_parser.add_argument("--rclone-remote", default=None)
+    sync_parser.add_argument("--drive-folder", default=None)
+    sync_parser.add_argument("--upload-manifest", action="store_true")
     return parser
 
 
@@ -36,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     config = load_config(args.config)
-    source_name = args.source or config.source
+    source_name = args.source or (config.sync_source if args.command == "sync" else config.source)
     output_raw = args.output_dir or config.output_dir
     output_dir = normalize_output_path(output_raw)
     repo_root = Path.cwd()
@@ -54,6 +62,20 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "validate":
             print(summarize_items(source.scan()).human_summary())
             return 0
+        if args.command == "sync":
+            rclone_config = RcloneConfig(
+                remote=args.rclone_remote or config.rclone_remote,
+                folder=args.drive_folder or config.google_drive_folder,
+                upload_manifest=args.upload_manifest or config.upload_manifest,
+            )
+            report = run_sync(
+                source=source,
+                exporter=exporter,
+                rclone_config=rclone_config,
+                dry_run=args.dry_run,
+            )
+            print(report.human_summary())
+            return 0 if report.ok else 1
         report = exporter.export(source, dry_run=args.dry_run)
         print(report.human_summary(dry_run=args.dry_run))
         return 1 if report.errors else 0

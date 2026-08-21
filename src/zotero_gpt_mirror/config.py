@@ -16,6 +16,10 @@ class AppConfig:
     write_index: bool = True
     zotero_local_api: str = DEFAULT_LOCAL_API
     zotero_transport: str = "auto"
+    rclone_remote: str = "gdrive"
+    google_drive_folder: str = "Zotero"
+    sync_source: str = "zotero-local"
+    upload_manifest: bool = False
 
 
 def load_config(path: Path | None) -> AppConfig:
@@ -26,6 +30,8 @@ def load_config(path: Path | None) -> AppConfig:
     mirror = data.get("mirror", {})
     export = data.get("export", {})
     zotero = data.get("zotero", {})
+    google_drive = data.get("google_drive", {})
+    sync = data.get("sync", {})
     return AppConfig(
         output_dir=str(mirror.get("output_dir", AppConfig.output_dir)),
         source=str(export.get("source", AppConfig.source)),
@@ -34,4 +40,8 @@ def load_config(path: Path | None) -> AppConfig:
         write_index=bool(export.get("write_index", AppConfig.write_index)),
         zotero_local_api=str(zotero.get("local_api", AppConfig.zotero_local_api)),
         zotero_transport=str(zotero.get("transport", AppConfig.zotero_transport)),
+        rclone_remote=str(google_drive.get("rclone_remote", AppConfig.rclone_remote)),
+        google_drive_folder=str(google_drive.get("folder", AppConfig.google_drive_folder)),
+        sync_source=str(sync.get("source", AppConfig.sync_source)),
+        upload_manifest=bool(sync.get("upload_manifest", AppConfig.upload_manifest)),
     )
